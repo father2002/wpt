@@ -1,0 +1,31 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Test that NEL reports are sent for successful requests</title>
+  <script src='/resources/testharness.js'></script>
+  <script src='/resources/testharnessreport.js'></script>
+  <script src='./support/fetch.sub.js'></script>
+</head>
+<body>
+  <script>
+    promise_test(async t => {
+      await clearReportingAndNELConfigurations();
+      // Make a request to a resource whose response headers include a NEL
+      // policy.
+      await fetchResourceWithBasicPolicy();
+      // That policy should apply to the request that delivered it, so the
+      // collector should have received a report about the request.
+      assert_true(await reportExists({
+        url: getURLForResourceWithBasicPolicy(),
+        type: "network-error",
+        report: {
+          uri: getURLForResourceWithBasicPolicy(),
+          sampling_fraction: 1.0,
+          status_code: 200,
+          type: "ok",
+        },
+      }));
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>
+    Test that NEL reports are sent for successful requests via an
+    include_subdomains policy
+  </title>
+  <script src='/resources/testharness.js'></script>
+  <script src='/resources/testharnessreport.js'></script>
+  <script src='./support/fetch.sub.js'></script>
+</head>
+<body>
+  <script>
+    promise_test(async t => {
+      await clearReportingAndNELConfigurations();
+      // Make a request to a resource whose response headers include an
+      // include_subdomains NEL policy.
+      await fetchResourceWithIncludeSubdomainsPolicy();
+      // Make a request to another resource on a subdomain of the above, which
+      // does not define its own NEL policy.
+      await fetchResourceWithNoPolicy('www2');
+      // The include_subdomains policy that we just received should cover the
+      // second request, so the collector should have received a report about
+      // it.
+      assert_true(await reportExists({
+        url: getURLForResourceWithNoPolicy('www2'),
+        type: "network-error",
+        report: {
+          uri: getURLForResourceWithNoPolicy('www2'),
+          sampling_fraction: 1.0,
+          status_code: 200,
+          type: "ok",
+        },
+      }));
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Test that NEL reports are sent for HTTP errors</title>
+  <script src='/resources/testharness.js'></script>
+  <script src='/resources/testharnessreport.js'></script>
+  <script src='./support/fetch.sub.js'></script>
+</head>
+<body>
+  <script>
+    promise_test(async t => {
+      await clearReportingAndNELConfigurations();
+      // Make a request to a resource whose response headers include a NEL
+      // policy.
+      await fetchResourceWithBasicPolicy();
+      // Make a request to another resource on the same domain.  This resource
+      // doesn't exist, so the server should return a 404.
+      await fetchMissingResource();
+      // The 404 won't contain its own NEL policy, but the policy we received in
+      // the first request should cover the second request, too, since they're
+      // at the same origin, so the collector should have received a report
+      // about it.
+      assert_true(await reportExists({
+        url: getURLForMissingResource(),
+        type: "network-error",
+        report: {
+          uri: getURLForMissingResource(),
+          sampling_fraction: 1.0,
+          status_code: 404,
+          type: "http.error",
+        },
+      }));
+    });
+  </script>
+</body>
+</html>
